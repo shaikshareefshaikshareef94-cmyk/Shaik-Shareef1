@@ -1,0 +1,269 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { 
+  RotateCcw, 
+  ThumbsUp, 
+  ThumbsDown, 
+  SkipForward, 
+  BookOpen,
+  Brain,
+  RefreshCw,
+  Trophy,
+  Target
+} from "lucide-react";
+
+const sampleFlashcards = [
+  {
+    id: 1,
+    front: "What is photosynthesis?",
+    back: "Photosynthesis is the process by which plants convert light energy into chemical energy (glucose) using carbon dioxide and water, releasing oxygen as a byproduct.",
+    subject: "Biology",
+    difficulty: "medium",
+    reviewed: false
+  },
+  {
+    id: 2,
+    front: "Define Newton's First Law of Motion",
+    back: "An object at rest stays at rest and an object in motion stays in motion with the same speed and in the same direction unless acted upon by an unbalanced force.",
+    subject: "Physics",
+    difficulty: "easy",
+    reviewed: false
+  },
+  {
+    id: 3,
+    front: "What is the quadratic formula?",
+    back: "x = (-b ± √(b² - 4ac)) / 2a, where a, b, and c are coefficients of the quadratic equation ax² + bx + c = 0",
+    subject: "Mathematics",
+    difficulty: "hard",
+    reviewed: false
+  }
+];
+
+export const FlashcardSystem = () => {
+  const [currentCard, setCurrentCard] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [cards, setCards] = useState(sampleFlashcards);
+  const [reviewedCards, setReviewedCards] = useState(0);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+
+  const handleFlip = () => {
+    setIsFlipped(!isFlipped);
+  };
+
+  const handleResponse = (isCorrect: boolean) => {
+    if (isCorrect) {
+      setCorrectAnswers(correctAnswers + 1);
+    }
+    
+    setReviewedCards(reviewedCards + 1);
+    setCards(cards.map((card, index) => 
+      index === currentCard ? { ...card, reviewed: true } : card
+    ));
+
+    if (currentCard < cards.length - 1) {
+      setCurrentCard(currentCard + 1);
+      setIsFlipped(false);
+    }
+  };
+
+  const handleSkip = () => {
+    if (currentCard < cards.length - 1) {
+      setCurrentCard(currentCard + 1);
+      setIsFlipped(false);
+    }
+  };
+
+  const resetSession = () => {
+    setCurrentCard(0);
+    setIsFlipped(false);
+    setReviewedCards(0);
+    setCorrectAnswers(0);
+    setCards(cards.map(card => ({ ...card, reviewed: false })));
+  };
+
+  const progressPercentage = (reviewedCards / cards.length) * 100;
+  const accuracyPercentage = reviewedCards > 0 ? (correctAnswers / reviewedCards) * 100 : 0;
+
+  if (reviewedCards >= cards.length) {
+    return (
+      <section className="py-20 px-4">
+        <div className="container max-w-2xl mx-auto">
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+                <Trophy className="h-7 w-7 text-accent" />
+                Session Complete!
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="text-5xl font-bold text-accent">
+                  {accuracyPercentage.toFixed(0)}%
+                </div>
+                <p className="text-lg">
+                  You got {correctAnswers} out of {cards.length} cards correct
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-success/10 rounded-lg">
+                  <div className="text-2xl font-bold text-success">{correctAnswers}</div>
+                  <p className="text-sm text-muted-foreground">Correct</p>
+                </div>
+                <div className="p-4 bg-destructive/10 rounded-lg">
+                  <div className="text-2xl font-bold text-destructive">{cards.length - correctAnswers}</div>
+                  <p className="text-sm text-muted-foreground">Need Review</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button variant="learning" className="flex-1" onClick={resetSession}>
+                  <RefreshCw className="h-4 w-4" />
+                  Study Again
+                </Button>
+                <Button variant="floating" className="flex-1">
+                  <BookOpen className="h-4 w-4" />
+                  New Deck
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    );
+  }
+
+  const card = cards[currentCard];
+
+  return (
+    <section className="py-20 px-4">
+      <div className="container max-w-2xl mx-auto">
+        <div className="space-y-6">
+          {/* Progress Header */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Flashcard Study Session
+                </CardTitle>
+                <Badge variant="outline">
+                  {currentCard + 1} of {cards.length}
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                <Progress value={progressPercentage} />
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Progress: {reviewedCards} / {cards.length}</span>
+                  <span>Accuracy: {accuracyPercentage.toFixed(0)}%</span>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Flashcard */}
+          <div className="relative">
+            <Card 
+              className={`min-h-[300px] cursor-pointer transform transition-all duration-500 ${
+                isFlipped ? 'scale-105' : ''
+              }`}
+              onClick={handleFlip}
+            >
+              <CardContent className="p-8 flex flex-col justify-center min-h-[300px]">
+                <div className="text-center space-y-4">
+                  <Badge 
+                    variant={
+                      card.difficulty === "easy" ? "secondary" : 
+                      card.difficulty === "medium" ? "default" : "destructive"
+                    }
+                    className="mb-4"
+                  >
+                    {card.subject} - {card.difficulty}
+                  </Badge>
+                  
+                  <div className="space-y-4">
+                    {!isFlipped ? (
+                      <>
+                        <Brain className="h-12 w-12 text-accent mx-auto" />
+                        <h3 className="text-xl font-semibold leading-relaxed">
+                          {card.front}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Click to reveal answer
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Target className="h-12 w-12 text-success mx-auto" />
+                        <div className="space-y-3">
+                          <h4 className="text-lg font-medium text-muted-foreground">
+                            {card.front}
+                          </h4>
+                          <div className="border-t pt-3">
+                            <p className="text-lg leading-relaxed">
+                              {card.back}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="absolute top-4 right-4">
+              <Button variant="ghost" size="sm" onClick={handleFlip}>
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          {isFlipped && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    How well did you know this?
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleResponse(false)}
+                    className="flex-col h-16 text-destructive border-destructive/20 hover:bg-destructive/10"
+                  >
+                    <ThumbsDown className="h-5 w-5 mb-1" />
+                    <span className="text-xs">Need Review</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={handleSkip}
+                    className="flex-col h-16"
+                  >
+                    <SkipForward className="h-5 w-5 mb-1" />
+                    <span className="text-xs">Skip</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleResponse(true)}
+                    className="flex-col h-16 text-success border-success/20 hover:bg-success/10"
+                  >
+                    <ThumbsUp className="h-5 w-5 mb-1" />
+                    <span className="text-xs">Got It!</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};
